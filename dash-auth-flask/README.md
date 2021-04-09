@@ -1,5 +1,5 @@
 # dash-auth-flask
-Flask authentication for [Dash](dash.plot.ly).
+Flask authentication for [Dash](https://dash.plotly.com/).
 
 ## Features
 Landing pages and functions to run the entire authentication process:

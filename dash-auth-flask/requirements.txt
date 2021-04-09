@@ -34,7 +34,7 @@ pickleshare==0.7.5
 plotly==4.4.1
 prompt-toolkit==3.0.2
 ptyprocess==0.6.0
-Pygments==2.5.2
+Pygments==2.7.4
 pylint==2.5.0
 PyYAML==5.2
 requests==2.22.0

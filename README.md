@@ -3,6 +3,8 @@
 This project ties together Flask, Dash, Docker and Nginx for bootstraping 
 CI\CD pipelines of Flask \ Dash \ Plot.ly Applications.
 
+Check out this great project [cookiecutter-dash-full-stack](https://github.com/elben10/cookiecutter-dash-full-stack)
+
 ## What is Dash? 
 
 Dash Web Applications combine the full power and best features of Plot.ly, Python, React.js and Flask.

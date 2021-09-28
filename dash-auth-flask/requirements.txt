@@ -9,7 +9,7 @@ dash-bootstrap-components==0.8.1
 dash-core-components==1.7.0
 dash-html-components==1.0.2
 dash-renderer==1.2.3
-dash-table==4.6.0
+dash-table==4.7.0
 decorator==4.4.1
 Flask==1.1.1
 Flask-Compress==1.4.0

@@ -14,38 +14,83 @@ from pages import (home, profile, page1)
 # app authentication 
 from pages.auth_pages import (login, register, forgot_password, change_password)
 
-header = dbc.Navbar(
-    dbc.Container(
-        [
-            dbc.NavbarBrand("Dash Auth Flask", href="/home"),
-            dbc.Nav(
-                [
-                    dbc.NavItem(dbc.NavLink("Home", href="/home")),
-                    dbc.NavItem(dbc.NavLink("Page1", href="/page1")),
-                    dbc.NavItem(dbc.NavLink(id='user-name',href='/profile')),
-                    dbc.NavItem(dbc.NavLink('Login',id='user-action',href='Login'))
-                ]
-            )
-        ]
-    ),
-    className="mb-5",
-)
 
+# the style arguments for the sidebar. We use position:fixed and a fixed width
+SIDEBAR_STYLE = {
+    "position": "fixed",
+    "top": 0,
+    "left": 0,
+    "bottom": 0,
+    "width": "16rem",
+    "padding": "2rem 1rem",
+    "background-color": "#333",
+}
 
+# the styles for the main content position it to the right of the sidebar and
+# add some padding.
+CONTENT_STYLE = {
+    "margin-left": "18rem",
+    "margin-right": "2rem",
+    "padding": "2rem 1rem",
+}
 
-app.layout = html.Div(
+sidebar = html.Div(
     [
-        header,
-        html.Div(
-            [
-                dbc.Container(
-                    id='page-content'
-                )
-            ]
+        html.H2("Menu", className="display-4"),
+        html.Hr(),
+        html.P(
+            "Subtitle", className="lead"
         ),
-        dcc.Location(id='base-url', refresh=False)
-    ]
+        dbc.Nav(
+            [
+                    dbc.NavItem(dbc.NavLink("Home", href="/home", external_link=True)),
+                    dbc.NavItem(dbc.NavLink("Page1", href="/page1", external_link=True)),
+                    dbc.NavItem(dbc.NavLink(id='user-name',href='/profile', external_link=True)),
+                    dbc.NavItem(dbc.NavLink('Login',id='user-action',href='Login', external_link=True))
+            ],
+            vertical=True,
+            pills=True,
+        ),
+    ],
+    style=SIDEBAR_STYLE,
 )
+
+content = html.Div(id="page-content", style=CONTENT_STYLE)
+
+app.layout = html.Div([dcc.Location(id="base-url"), sidebar, content])
+
+# header = dbc.Navbar(
+#     dbc.Container(
+#         [
+#             dbc.NavbarBrand("Dash Auth Flask", href="/home"),
+#             dbc.Nav(
+#                 [
+#                     dbc.NavItem(dbc.NavLink("Home", href="/home", external_link=True)),
+#                     dbc.NavItem(dbc.NavLink("Page1", href="/page1", external_link=True)),
+#                     dbc.NavItem(dbc.NavLink(id='user-name',href='/profile', external_link=True)),
+#                     dbc.NavItem(dbc.NavLink('Login',id='user-action',href='Login', external_link=True))
+#                 ]
+#             )
+#         ]
+#     ),
+#     className="mb-5",
+# )
+
+
+
+# app.layout = html.Div(
+#     [
+#         header,
+#         html.Div(
+#             [
+#                 dbc.Container(
+#                     id='page-content'
+#                 )
+#             ]
+#         ),
+#         dcc.Location(id='base-url', refresh=False)
+#     ]
+# )
 
 
 @app.callback(

@@ -40,7 +40,6 @@ sidebar = html.Div(
         html.Hr(),
         html.P(
             "Subtitle", className="lead"
-<<<<<<< HEAD
         ),
         dbc.Nav(
             [
@@ -52,19 +51,6 @@ sidebar = html.Div(
             vertical=True,
             pills=True,
         ),
-=======
-        ),
-        dbc.Nav(
-            [
-                    dbc.NavItem(dbc.NavLink("Home", href="/home", external_link=True)),
-                    dbc.NavItem(dbc.NavLink("Page1", href="/page1", external_link=True)),
-                    dbc.NavItem(dbc.NavLink(id='user-name',href='/profile', external_link=True)),
-                    dbc.NavItem(dbc.NavLink('Login',id='user-action',href='Login', external_link=True))
-            ],
-            vertical=True,
-            pills=True,
-        ),
->>>>>>> ef45c25b7ab23df84bccff195c5b070aa6432d32
     ],
     style=SIDEBAR_STYLE,
 )
@@ -72,47 +58,6 @@ sidebar = html.Div(
 content = html.Div(id="page-content", style=CONTENT_STYLE)
 
 app.layout = html.Div([dcc.Location(id="base-url"), sidebar, content])
-
-# header = dbc.Navbar(
-#     dbc.Container(
-#         [
-#             dbc.NavbarBrand("Dash Auth Flask", href="/home"),
-#             dbc.Nav(
-#                 [
-<<<<<<< HEAD
-#                     dbc.NavItem(dbc.NavLink("Home", href="/home")),
-#                     dbc.NavItem(dbc.NavLink("Page1", href="/page1")),
-#                     dbc.NavItem(dbc.NavLink(id='user-name',href='/profile')),
-#                     dbc.NavItem(dbc.NavLink('Login',id='user-action',href='Login'))
-=======
-#                     dbc.NavItem(dbc.NavLink("Home", href="/home", external_link=True)),
-#                     dbc.NavItem(dbc.NavLink("Page1", href="/page1", external_link=True)),
-#                     dbc.NavItem(dbc.NavLink(id='user-name',href='/profile', external_link=True)),
-#                     dbc.NavItem(dbc.NavLink('Login',id='user-action',href='Login', external_link=True))
->>>>>>> ef45c25b7ab23df84bccff195c5b070aa6432d32
-#                 ]
-#             )
-#         ]
-#     ),
-#     className="mb-5",
-# )
-
-
-
-# app.layout = html.Div(
-#     [
-#         header,
-#         html.Div(
-#             [
-#                 dbc.Container(
-#                     id='page-content'
-#                 )
-#             ]
-#         ),
-#         dcc.Location(id='base-url', refresh=False)
-#     ]
-# )
-
 
 @app.callback(
     Output('page-content', 'children'),

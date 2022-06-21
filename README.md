@@ -31,7 +31,7 @@ For each component of this project a separate docker container is afforded,
 controlled ("orchestrated") by docker-compose.
 
 For the sake of simplicity, the same image is used for the separate containers. 
-The image stems from python:3.8-stretch, which contains a debian linux. Instead of debian a
+The image stems from python:3.8, which contains a debian linux. Instead of debian a
  more lightweight image like alpine could also be used.
 
 The are two containers in this project at work.

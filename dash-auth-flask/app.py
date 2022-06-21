@@ -1,6 +1,6 @@
 # index page
-import dash_core_components as dcc
-import dash_html_components as html
+from dash import dcc
+from dash import html
 import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, State
 
@@ -14,38 +14,83 @@ from pages import (home, profile, page1)
 # app authentication 
 from pages.auth_pages import (login, register, forgot_password, change_password)
 
-header = dbc.Navbar(
-    dbc.Container(
-        [
-            dbc.NavbarBrand("Dash Auth Flask", href="/home"),
-            dbc.Nav(
-                [
+
+# the style arguments for the sidebar. We use position:fixed and a fixed width
+SIDEBAR_STYLE = {
+    "position": "fixed",
+    "top": 0,
+    "left": 0,
+    "bottom": 0,
+    "width": "16rem",
+    "padding": "2rem 1rem",
+    "background-color": "#333",
+}
+
+# the styles for the main content position it to the right of the sidebar and
+# add some padding.
+CONTENT_STYLE = {
+    "margin-left": "18rem",
+    "margin-right": "2rem",
+    "padding": "2rem 1rem",
+}
+
+sidebar = html.Div(
+    [
+        html.H2("Menu", className="display-4"),
+        html.Hr(),
+        html.P(
+            "Subtitle", className="lead"
+        ),
+        dbc.Nav(
+            [
                     dbc.NavItem(dbc.NavLink("Home", href="/home")),
                     dbc.NavItem(dbc.NavLink("Page1", href="/page1")),
-                    dbc.NavItem(dbc.NavLink(id='user-name',href='/profile')),
-                    dbc.NavItem(dbc.NavLink('Login',id='user-action',href='Login'))
-                ]
-            )
-        ]
-    ),
-    className="mb-5",
-)
-
-
-
-app.layout = html.Div(
-    [
-        header,
-        html.Div(
-            [
-                dbc.Container(
-                    id='page-content'
-                )
-            ]
+                    dbc.NavItem(dbc.NavLink("Profile", id='user-name', href='/profile')),
+                    dbc.NavItem(dbc.NavLink('Login',id='user-action',href='/login'))
+            ],
+            vertical=True,
+            pills=True,
         ),
-        dcc.Location(id='base-url', refresh=False)
-    ]
+    ],
+    style=SIDEBAR_STYLE,
 )
+
+content = html.Div(id="page-content", style=CONTENT_STYLE)
+
+app.layout = html.Div([dcc.Location(id="base-url"), sidebar, content])
+
+# header = dbc.Navbar(
+#     dbc.Container(
+#         [
+#             dbc.NavbarBrand("Dash Auth Flask", href="/home"),
+#             dbc.Nav(
+#                 [
+#                     dbc.NavItem(dbc.NavLink("Home", href="/home")),
+#                     dbc.NavItem(dbc.NavLink("Page1", href="/page1")),
+#                     dbc.NavItem(dbc.NavLink(id='user-name',href='/profile')),
+#                     dbc.NavItem(dbc.NavLink('Login',id='user-action',href='Login'))
+#                 ]
+#             )
+#         ]
+#     ),
+#     className="mb-5",
+# )
+
+
+
+# app.layout = html.Div(
+#     [
+#         header,
+#         html.Div(
+#             [
+#                 dbc.Container(
+#                     id='page-content'
+#                 )
+#             ]
+#         ),
+#         dcc.Location(id='base-url', refresh=False)
+#     ]
+# )
 
 
 @app.callback(
@@ -55,7 +100,7 @@ def router(pathname):
     '''
     routes to correct page based on pathname
     '''
-    print('routing shit to',pathname)
+    print('routing to',pathname)
     # auth pages
     if pathname == '/login':
         if not current_user.is_authenticated:
@@ -64,10 +109,10 @@ def router(pathname):
         if not current_user.is_authenticated:
             return register.layout()
     elif pathname == '/change':
-        if not current_user.is_authenticated:
+        if current_user.is_authenticated:
             return change_password.layout()
     elif pathname == '/forgot':
-        if not current_user.is_authenticated:
+        if current_user.is_authenticated:
             return forgot_password.layout()
     elif pathname == '/logout':
         if current_user.is_authenticated:
@@ -124,4 +169,4 @@ def user_logout(input1):
 
 
 if __name__ == '__main__':
-    app.run_server(debug=True, port=8000)
+    app.run_server(debug=False, port=8000)

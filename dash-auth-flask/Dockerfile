@@ -1,9 +1,10 @@
-FROM python:3.7-stretch
+FROM python:3.9.13
 LABEL maintainer="Nekrasov Pavel <nekrasovp@gmail.com>"
 
 # Run application as 'app' user from 'app group.
 # A system user is acceptable and we do not need a home.
 RUN adduser --system --group --no-create-home app
+RUN /usr/local/bin/python -m pip install --upgrade pip
 
 # Place the application in a /app dir
 COPY . /app

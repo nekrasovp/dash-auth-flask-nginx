@@ -21,6 +21,8 @@ docker-compose up -d
 
 ### Preview
 
+![Screenshot](screenshot.png?raw=true "Screenshot")
+
 Point your browser to http://localhost:8000
 
 ## Docker containers
@@ -81,8 +83,27 @@ To kill all running docker processes:
 docker-compose rm -fs
 ```
 
+To build just the dev container
+```bash
+docker-compose -f docker-compose-development.yml build
+```
+
+To run just the dev container (http://localhost:8000)
+```bash
+docker-compose -f docker-compose-development.yml up -d
+```
+
+To tail the logs of either dev or prod containers
+```bash
+docker-compose logs -f
+```
+
 ## Networking
 
 docker-compose automatically sets up local network for our service where the containers can talk 
 to each other; usually in the 172.x.x.x range. It also ensures that containers can address each 
 other by their names.
+
+## TODO
+
+dash-bootstrap-components==0.13.1 needs to be updated to 1.1.0 but will require a refactor.

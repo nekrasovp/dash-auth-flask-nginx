@@ -1,5 +1,5 @@
-import dash_html_components as html
-import dash_core_components as dcc
+from dash import dcc
+from dash import html
 import dash_bootstrap_components as dbc
 from dash.dependencies import Input,Output,State
 from dash import no_update
@@ -43,13 +43,13 @@ def layout():
                     [
                         # First, first input, and formtext
                         dbc.Label('First:',id='profile-first'),
-                        dbc.Input(placeholder='Change first name...',id='profile-first-input'),
+                        dbc.Input(placeholder=str(current_user.first),id='profile-first-input'),
                         dbc.FormText(id='profile-first-formtext',color='secondary'),
                         html.Br(),
 
                         # last, last input, and formtext
                         dbc.Label('Last:',id='profile-last'),
-                        dbc.Input(placeholder='Change last name...',id='profile-last-input'),
+                        dbc.Input(placeholder=str(current_user.last),id='profile-last-input'),
                         dbc.FormText(id='profile-last-formtext',color='secondary'),
                         html.Br(),
 
@@ -73,7 +73,7 @@ def layout():
                         html.Hr(),
                         html.Br(),
 
-                        dbc.Button('Save changes',color='primary',id='profile-submit',disabled=True),
+                        dbc.Button('Save changes',color='primary',id='profile-submit',disabled=False),
                         
                     ] # end formgroup
                 )

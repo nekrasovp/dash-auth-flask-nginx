@@ -14,7 +14,7 @@ from utilities.config import config, engine
 
 app = dash.Dash(
     __name__,
-    external_stylesheets=[dbc.themes.BOOTSTRAP]
+    external_stylesheets=[dbc.themes.CYBORG]
 )
 
 server = app.server

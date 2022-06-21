@@ -3,8 +3,6 @@
 This project ties together Flask, Dash, Docker and Nginx for bootstraping 
 CI\CD pipelines of Flask \ Dash \ Plot.ly Applications.
 
-Check out this great project [cookiecutter-dash-full-stack](https://github.com/elben10/cookiecutter-dash-full-stack)
-
 ## What is Dash? 
 
 Dash Web Applications combine the full power and best features of Plot.ly, Python, React.js and Flask.
@@ -31,8 +29,7 @@ For each component of this project a separate docker container is afforded,
 controlled ("orchestrated") by docker-compose.
 
 For the sake of simplicity, the same image is used for the separate containers. 
-The image stems from python:3.8, which contains a debian linux. Instead of debian a
- more lightweight image like alpine could also be used.
+The image stems from python:3.9.13-alpine, which contains a debian linux.
 
 The are two containers in this project at work.
 

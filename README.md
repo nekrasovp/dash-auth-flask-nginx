@@ -33,27 +33,24 @@ The image stems from python:3.9.13-alpine, which contains a debian linux.
 
 The are two containers in this project at work.
 
-dash-auth-flask: where are Dash\Flask web application runs
-nginx: containing the nginx server
-The image is build from dash-auth-flask/Dockerfile. This one Dockerfile includes all the necessary
-python components and their dependencies from dash-auth-flask/requirements.txt. 
-Because we're using the same image for multiple purposes like different flask applications it 
-has to contain all of these components. 
-In an advanced use case you want to build different images which are tailored to their 
-individual purposes.
+1. dash-auth-flask: where are Dash\Flask web application runs
+2. nginx: containing the nginx server
 
-For the nginx server container is out-of-the-box nginx image which re-write conf files.
+dash-auth-flask/Dockerfile. This one Dockerfile includes all the necessary
+python components and their dependencies from dash-auth-flask/requirements.txt.
+
+Because we're using the same image for multiple purposes like different flask applications it has to contain all of these components. 
+
+In an advanced use case you want to build different images which are tailored to their individual purposes.
+
+For the nginx server container is out-of-the-box nginx image with flask/gunicorn re-write conf files.
 
 ## docker-compose in development and production
 
 To give an example of a development workflow with docker-compose two configuration files are used. 
-A feature of docker-compose is to have multiple configuration files layered on top of each other 
-where later files override settings from previous ones.
+A feature of docker-compose is to have multiple configuration files layered on top of each other where later files override settings from previous ones.
 
-In this project the default __docker-compose.yml__ runs the application in a production like manner 
-while the additional __docker-compose-development.yml__ runs the application in a way more suitable 
-for development. "Production like" does actual mean that you can run it like this on the
-internet, check nginx configuration files included.
+In this project the default __docker-compose.yml__ runs the application in a production like manner while the additional __docker-compose-development.yml__ runs the application in a way more suitable for development. "Production like" does actual mean that you can run it like this on the internet, check nginx configuration files included.
 
 To run the application in a production like manner:
 ```bash

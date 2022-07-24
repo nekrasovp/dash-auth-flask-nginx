@@ -1,9 +1,20 @@
-FROM python:3.7-stretch
-LABEL maintainer="Nekrasov Pavel <nekrasovp@gmail.com>"
-
 # Run application as 'app' user from 'app group.
 # A system user is acceptable and we do not need a home.
-RUN adduser --system --group --no-create-home app
+
+# For python:3.9.13
+# FROM python:3.9.13
+# LABEL maintainer="Nekrasov Pavel <nekrasovp@gmail.com>"
+# RUN adduser --system --group --no-create-home app  
+
+# For python:3.9.13-alpine
+FROM python:3.9.13-alpine
+LABEL maintainer="Nekrasov Pavel <nekrasovp@gmail.com>"
+RUN addgroup app
+RUN adduser -S -G app -H app
+# For asteroid using Alpine. Can comment out for non alpine
+RUN apk add --no-cache --update python3-dev gcc build-base
+
+RUN /usr/local/bin/python -m pip install --upgrade pip
 
 # Place the application in a /app dir
 COPY . /app

@@ -3,6 +3,7 @@ version: '3'
 services:
   dash-auth-flask:
     container_name: dash-auth-flask
+    build: ./dash-auth-flask
     restart: always
     volumes:
       - ./dash-auth-flask:/app
@@ -13,5 +14,4 @@ services:
     ports:
       - "8000:8000"
     command: >
-      sh -c "python create_tables.py &&
-             flask run --host=0.0.0.0 --port=8000"
+      sh -c "python create_tables.py && flask run --host=0.0.0.0 --port=8000"

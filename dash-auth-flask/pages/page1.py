@@ -1,5 +1,5 @@
-import dash_html_components as html
-import dash_core_components as dcc
+from dash import dcc
+from dash import html
 import dash_bootstrap_components as dbc
 from dash.dependencies import Output,Input,State
 from dash import no_update
@@ -32,7 +32,7 @@ def layout():
                 html.Br(),
 
                 html.Div(id='page1-test-trigger'),
-                dcc.Loading(html.Iframe(id='page1-test',style=dict(height='500px',width='100%')),id='page1-loading')
+                #dcc.Loading(html.Iframe(id='page1-test',style=dict(height='500px',width='100%')),id='page1-loading')
             ],
             width=6
         )

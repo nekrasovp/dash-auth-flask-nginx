@@ -1,5 +1,5 @@
-import dash_html_components as html
-import dash_core_components as dcc
+from dash import dcc
+from dash import html
 import dash_bootstrap_components as dbc
 from dash.dependencies import Output,Input,State
 from dash import no_update
@@ -14,6 +14,7 @@ home_login_alert = dbc.Alert(
 )
 
 def layout():
+
     return dbc.Row(
         dbc.Col(
             [
@@ -23,7 +24,7 @@ def layout():
                 html.H1('Home page'),
                 html.Br(),
 
-                html.H5('Welcome to the home page!'),
+                html.H5("Welcome to the home page " + str(current_user.first) + "!"),
                 html.Br(),
 
                 html.Div(id='home-test-trigger'),

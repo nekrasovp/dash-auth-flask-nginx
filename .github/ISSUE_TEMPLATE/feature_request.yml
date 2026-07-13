@@ -1,0 +1,45 @@
+name: Feature request
+description: Propose a focused improvement to the starter
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What user or developer problem should this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the smallest useful outcome and relevant alternatives.
+    validations:
+      required: true
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Primary area
+      options:
+        - Authentication or profile
+        - Dashboard or analytics UI
+        - Developer experience
+        - Docker Compose or Nginx
+        - Documentation
+    validations:
+      required: true
+  - type: textarea
+    id: constraints
+    attributes:
+      label: Scope and compatibility
+      description: Note security, migration, SQLite, or backward-compatibility considerations.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: This keeps the starter focused and educational.
+          required: true
+        - label: I searched existing issues and pull requests.
+          required: true

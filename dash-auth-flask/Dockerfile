@@ -1,36 +1,27 @@
-# Run application as 'app' user from 'app group.
-# A system user is acceptable and we do not need a home.
+FROM python:3.13-slim
 
-# For python:3.9.13
-# FROM python:3.9.13
-# LABEL maintainer="Nekrasov Pavel <nekrasovp@gmail.com>"
-# RUN adduser --system --group --no-create-home app  
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# For python:3.9.13-alpine
-FROM python:3.9.13-alpine
-LABEL maintainer="Nekrasov Pavel <nekrasovp@gmail.com>"
-RUN addgroup app
-RUN adduser -S -G app -H app
-# For asteroid using Alpine. Can comment out for non alpine
-RUN apk add --no-cache --update python3-dev gcc build-base
+RUN groupadd --system app && useradd --system --gid app --home-dir /app app
 
-RUN /usr/local/bin/python -m pip install --upgrade pip
-
-# Place the application in a /app dir
-COPY . /app
-
-# Make the directory the working directory for subsequent commands
 WORKDIR /app
 
-# Install from the requirements.txt
-RUN pip install -r requirements.txt
+COPY requirements.txt ./
+RUN python -m pip install --no-cache-dir --upgrade pip \
+    && python -m pip install --no-cache-dir -r requirements.txt
 
-# Кestrict rights to the 'app' user
-RUN chown -R app:app /app
+COPY . .
 
-# In this Dockerfile and in a docker-compose.yml, run as user 'app'
+RUN mkdir -p /data /app/instance \
+    && chown -R app:app /app /data
+
 USER app
 
-# As this image is used for different
-# purposes and processes no CMD or ENTRYPOINT is specified here,
-# this is done in docker-compose.yml.
+EXPOSE 8000
+
+HEALTHCHECK --interval=10s --timeout=3s --start-period=15s --retries=5 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=2)"
+
+CMD ["sh", "-c", "flask --app app:server init-db && flask --app app:server seed-demo && exec gunicorn --workers 1 --threads 4 --bind 0.0.0.0:8000 --access-logfile - app:server"]

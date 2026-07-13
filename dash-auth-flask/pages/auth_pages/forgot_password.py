@@ -1,83 +1,92 @@
-from dash import dcc
-from dash import html
+"""Password-reset request page."""
+
+from __future__ import annotations
+
+import logging
+
+import dash
 import dash_bootstrap_components as dbc
-from dash.dependencies import Input,Output,State
-from dash import no_update
+from dash import Input, Output, State, callback, dcc, html, no_update
+from flask import current_app, request
+from flask_login import current_user
+from sqlalchemy.exc import SQLAlchemyError
 
-from flask_login import login_user, current_user
-from werkzeug.security import check_password_hash
-import time
-from sqlalchemy.sql import select
+from services.auth import create_reset_request, discard_reset_request
+from services.mail import MailDeliveryError, send_password_reset
+from ui import auth_card, feedback_alert, form_field
 
-from server import app, User, engine
-from utilities.auth import (
-    send_password_key,
-    user_table,
+LOGGER = logging.getLogger(__name__)
+GENERIC_MESSAGE = "If an account matches that email, a password-reset link is on its way."
+
+dash.register_page(
+    __name__,
+    path="/forgot-password",
+    name="Forgot password",
+    title="Reset password · Dash Starter",
+    redirect_from=["/forgot"],
 )
 
-success_alert = dbc.Alert(
-    'Reset successful. Taking you to change password.',
-    color='success',
-)
-failure_alert = dbc.Alert(
-    'Reset unsuccessful. Are you sure that email was correct?',
-    color='danger',
-)
-already_login_alert = dbc.Alert(
-    'User already logged in. Taking you to your profile.',
-    color='warning'
-)
 
-def layout():
-    return dbc.Row(
-        dbc.Col(
-            [
-                html.H3('Forgot Password'),
-                dcc.Location(id='forgot-url',refresh=True),
-                dbc.FormGroup(
-                    [
-                        html.Div(id='forgot-alert'),
-                        html.Div(id='forgot-trigger',style=dict(display='none')),
-                        html.Br(),
-
-                        dbc.Input(id='forgot-email',autoFocus=True),
-                        dbc.FormText('Email'),
-                        html.Br(),
-
-                        dbc.Button('Submit email to receive code',id='forgot-button',color='primary'),
-
-                    ]
-                )
-            ],
-            width=6
-        )
+def layout(**_kwargs):
+    if current_user.is_authenticated:
+        return dcc.Location(id="forgot-authenticated", href="/profile", refresh=True)
+    form = dbc.Form(
+        [
+            html.Div(id="forgot-alert"),
+            form_field(
+                "Email address",
+                "forgot-email",
+                input_type="email",
+                placeholder="you@example.com",
+                auto_focus=True,
+            ),
+            dbc.Button(
+                "Send reset link",
+                id="forgot-submit",
+                color="primary",
+                className="auth-submit",
+            ),
+        ]
+    )
+    footer = html.P(
+        dcc.Link("Back to sign in", href="/login"),
+        className="auth-footer",
+    )
+    return auth_card(
+        "Reset your password",
+        "Enter your account email and we’ll send a secure link.",
+        form,
+        footer,
     )
 
 
-
-@app.callback(
-    [Output('forgot-alert','children'),
-     Output('forgot-url','pathname')],
-    [Input('forgot-button','n_clicks')],
-    [State('forgot-email','value')]
+@callback(
+    Output("forgot-alert", "children"),
+    Input("forgot-submit", "n_clicks"),
+    State("forgot-email", "value"),
+    prevent_initial_call=True,
 )
-def forgot_submit(submit,email):
-    # get first name
-    print('getting first name')
-    table = user_table()
-    statement = select([table.c.first]).\
-                where(table.c.email==email)
-    conn = engine.connect()
-    resp = list(conn.execute(statement))
-    resp[0].first
-    if len(resp)==0:
-        return failure_alert, no_update    
-    else:
-        firstname = resp[0].first
-    conn.close()
-    
-    # if it does, send password reset and save info
-    if send_password_key(email, firstname, engine):
-        return success_alert, '/change'
-    else:
-        return failure_alert, no_update
+def request_password_reset(n_clicks, email):
+    if not n_clicks:
+        return no_update
+    reset_request = None
+    try:
+        reset_request = create_reset_request(
+            email,
+            current_app.config["RESET_TOKEN_TTL_MINUTES"],
+        )
+        if reset_request is not None:
+            reset_url = (
+                f"{request.host_url.rstrip('/')}/reset-password?token={reset_request.raw_token}"
+            )
+            send_password_reset(reset_request.user, reset_url)
+    except MailDeliveryError:
+        LOGGER.exception("Password-reset email delivery failed")
+        if reset_request is not None:
+            try:
+                discard_reset_request(reset_request)
+            except SQLAlchemyError:
+                LOGGER.exception("Unable to discard undelivered reset token")
+    except SQLAlchemyError:
+        LOGGER.exception("Password-reset request failed")
+    return feedback_alert(GENERIC_MESSAGE, "success")

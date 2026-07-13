@@ -1,169 +1,118 @@
-from dash import dcc
-from dash import html
+"""Account registration page."""
+
+from __future__ import annotations
+
+import logging
+
+import dash
 import dash_bootstrap_components as dbc
-from dash.dependencies import Input,Output,State
-from dash import no_update
+from dash import Input, Output, State, callback, dcc, html, no_update
+from flask_login import current_user, login_user
+from sqlalchemy.exc import SQLAlchemyError
 
-from flask_login import login_user, current_user
-from werkzeug.security import check_password_hash
-import time
-from validate_email import validate_email
+from services.auth import AuthError, create_user
+from ui import auth_card, feedback_alert, form_field
 
-from server import app, User, engine
-from utilities.auth import (
-    add_user,
-    user_exists,
-    db,
+LOGGER = logging.getLogger(__name__)
+
+dash.register_page(
+    __name__,
+    path="/register",
+    name="Register",
+    title="Create account · Dash Starter",
 )
 
 
-success_alert = dbc.Alert(
-    'Registered successfully. Taking you to login.',
-    color='success',
-    dismissable=True
-)
-failure_alert = dbc.Alert(
-    'Registration unsuccessful.',
-    color='danger',
-    dismissable=True
-)
-already_registered_alert = dbc.Alert(
-    "You're already registered! Taking you home.",
-    color='success',
-    dismissable=True
-)
-
-def layout():
-    return dbc.Row(
-        dbc.Col(
-            [
-                dcc.Location(id='register-url',refresh=True,),
-                html.Div(id='register-trigger',style=dict(display='none')),
-                html.Div(id='register-alert'),
-                dbc.FormGroup(
-                    [
-                        dbc.Input(id='register-first',autoFocus=True),
-                        dbc.FormText('First'),
-                        html.Br(),
-
-                        dbc.Input(id='register-last'),
-                        dbc.FormText('Last'),
-                        html.Br(),
-                        
-                        dbc.Input(id='register-email'),
-                        dbc.FormText('Email',id='register-email-formtext',color='secondary'),
-                        html.Br(),
-                        
-                        dbc.Input(id='register-password',type='password'),
-                        dbc.FormText('Password'),
-                        html.Br(),
-                        
-                        dbc.Input(id='register-confirm',type='password'),
-                        dbc.FormText('Confirm password'),
-                        html.Br(),
-                        
-
-                        dbc.Button('Submit',color='primary',id='register-button'),
-                    ]
-                )
-            ],
-            width=6
-        )
+def layout(**_kwargs):
+    if current_user.is_authenticated:
+        return dcc.Location(id="register-authenticated", href="/", refresh=True)
+    form = dbc.Form(
+        [
+            dcc.Location(id="register-redirect", refresh=True),
+            html.Div(id="register-alert"),
+            dbc.Row(
+                [
+                    dbc.Col(
+                        form_field(
+                            "First name",
+                            "register-first-name",
+                            placeholder="Ada",
+                            auto_focus=True,
+                        ),
+                        sm=6,
+                    ),
+                    dbc.Col(
+                        form_field(
+                            "Last name",
+                            "register-last-name",
+                            placeholder="Lovelace",
+                        ),
+                        sm=6,
+                    ),
+                ],
+                className="g-3",
+            ),
+            form_field(
+                "Email address",
+                "register-email",
+                input_type="email",
+                placeholder="you@example.com",
+            ),
+            form_field(
+                "Password",
+                "register-password",
+                input_type="password",
+                placeholder="At least 12 characters",
+                help_text="Use 12 or more characters.",
+            ),
+            form_field(
+                "Confirm password",
+                "register-confirm",
+                input_type="password",
+                placeholder="Repeat your password",
+            ),
+            dbc.Button(
+                "Create account",
+                id="register-submit",
+                color="primary",
+                className="auth-submit",
+            ),
+        ]
+    )
+    footer = html.P(
+        ["Already registered? ", dcc.Link("Sign in", href="/login")],
+        className="auth-footer",
+    )
+    return auth_card(
+        "Create your account",
+        "Start with a secure, modern Dash workspace.",
+        form,
+        footer,
     )
 
 
-
-
-@app.callback(
-    [Output('register-'+x,'valid') for x in ['first','last','email','password','confirm']]+\
-    [Output('register-'+x,'invalid') for x in ['first','last','email','password','confirm']]+\
-    [Output('register-button','disabled'),
-     Output('register-email-formtext','children'),
-     Output('register-email-formtext','color')],
-    [Input('register-'+x,'value') for x in ['first','last','email','password','confirm']]
+@callback(
+    Output("register-alert", "children"),
+    Output("register-redirect", "href"),
+    Input("register-submit", "n_clicks"),
+    State("register-first-name", "value"),
+    State("register-last-name", "value"),
+    State("register-email", "value"),
+    State("register-password", "value"),
+    State("register-confirm", "value"),
+    prevent_initial_call=True,
 )
-def register_validate_inputs(first,last,email,password,confirm):
-    '''
-    validate all inputs
-    '''
-    
-    email_formtext = 'Email'
-    email_formcolor = 'secondary'
-    disabled = True
-    bad = [None,'']
-    
-    v = {k:f for k,f in zip(['first','last','email','password','confirm'],[first,last,email,password,confirm])}
-    # if all the values are empty, leave everything blank and disable button
-    if sum([x in bad for x in v.values()])==5:
-        return [False for x in range(10)]+[disabled,email_formtext,email_formcolor]
-
-    d = {}
-    d['valid'] = {x:False for x in ['first','last','email','password','confirm']}
-    d['invalid'] = {x:False for x in ['first','last','email','password','confirm']}
-
-    def validate(x, inst):
-        if v[x] in bad:
-            pass
-        elif not isinstance(v[x],inst):
-            d['valid'][x], d['invalid'][x] = False,True
-        else:
-            d['valid'][x], d['invalid'][x] = True, False
-
-    for k in ['first','last','password']:
-        validate(k,str)
-
-    x = 'confirm'
-    if v[x] in bad:
-        pass
-    d['valid'][x] = not v[x]in bad and v['password']==v[x]
-    d['invalid'][x] = not v['confirm']
-
-
-    # if it's a valid email, check if it already exists
-    # if it exists, invalidate it and let the user know
-    x = 'email'
-    if v[x] in bad:
-        pass
-    else: 
-        d['valid'][x] = validate_email(v[x])
-        d['invalid'][x] = not d['valid'][x]
-    if user_exists(v[x],engine):
-        d['valid'][x] = False
-        d['invalid'][x] = True
-        email_formcolor = 'danger'
-        email_formtext = 'Email already exists.'
-    
-    # if all are valid, enable the button
-    if sum(d['valid'].values())==5:
-        disabled = False
-
-    return [
-        *list(d['valid'].values()),
-        *list(d['invalid'].values()),
-        disabled,
-        email_formtext,
-        email_formcolor
-    ]
-
-
-
-
-
-@app.callback(
-    [Output('register-url', 'pathname'),
-     Output('register-alert', 'children')],
-    [Input('register-button', 'n_clicks')],
-    [State('register-'+x, 'value') for x in ['first','last','email','password','confirm']],
-)
-def register_success(n_clicks,first,last,email,password,confirm):
-    if n_clicks == 0:
-        time.sleep(.25)
-        if current_user.is_authenticated:
-            return '/home',already_registered_alert
-        else:
-            return no_update,no_update
-    
-    if add_user(first,last,password,email,engine):
-        return '/login',success_alert
-    else:
-        return '',failure_alert
+def register(n_clicks, first_name, last_name, email, password, confirm):
+    if not n_clicks:
+        return no_update, no_update
+    if password != confirm:
+        return feedback_alert("Passwords do not match."), no_update
+    try:
+        user = create_user(first_name, last_name, email, password)
+    except AuthError as exc:
+        return feedback_alert(str(exc)), no_update
+    except SQLAlchemyError:
+        LOGGER.exception("Registration database failure")
+        return feedback_alert("Unable to create your account right now."), no_update
+    login_user(user)
+    return no_update, "/"

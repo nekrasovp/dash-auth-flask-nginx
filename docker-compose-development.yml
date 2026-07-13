@@ -1,17 +1,13 @@
-version: '3'
-
 services:
-  dash-auth-flask:
-    container_name: dash-auth-flask
-    build: ./dash-auth-flask
-    restart: always
+  app:
     volumes:
       - ./dash-auth-flask:/app
-    environment:
-      - FLASK_APP=app:server
-      - FLASK_DEBUG=1
-      - FLASK_ENV=development
+      - app-data:/data
     ports:
-      - "8000:8000"
-    command: >
-      sh -c "python create_tables.py && flask run --host=0.0.0.0 --port=8000"
+      - "8050:8000"
+    environment:
+      APP_ENV: development
+    command: >-
+      sh -c "flask --app app:server init-db &&
+      flask --app app:server seed-demo &&
+      python app.py"

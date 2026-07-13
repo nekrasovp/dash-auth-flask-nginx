@@ -1,136 +1,94 @@
-from dash import dcc
-from dash import html
+"""Password reset redemption page."""
+
+from __future__ import annotations
+
+import logging
+
+import dash
 import dash_bootstrap_components as dbc
-from dash.dependencies import Input,Output,State
-from dash import no_update
+from dash import Input, Output, State, callback, dcc, html, no_update
+from flask_login import current_user
+from sqlalchemy.exc import SQLAlchemyError
 
-from flask_login import login_user, current_user
-from werkzeug.security import check_password_hash
-from sqlalchemy.sql import select
+from services.auth import AuthError, redeem_reset_token
+from ui import auth_card, feedback_alert, form_field
 
-from server import app, User, engine
-from utilities.auth import (
-    validate_password_key,
-    change_password,
+LOGGER = logging.getLogger(__name__)
+
+dash.register_page(
+    __name__,
+    path="/reset-password",
+    name="Reset password",
+    title="Choose a new password · Dash Starter",
+    redirect_from=["/change"],
 )
 
-import time
 
-success_alert = dbc.Alert(
-    'Reset successful. Taking you to login!',
-    color='success',
-)
-failure_alert = dbc.Alert(
-    'Reset unsuccessful. Are you sure the email and code were correct?',
-    color='danger',
-)
-already_login_alert = dbc.Alert(
-    'User already logged in. Taking you to your profile.',
-    color='warning'
-)
-
-def layout():
-    return dbc.Row(
-        dbc.Col(
-            [
-                html.H3('Change Password'),
-                dcc.Location(id='change-url',refresh=True),
-                html.Div(id='change-trigger',style=dict(display='none')),
-                dbc.FormGroup(
-                    [
-                        html.Div(id='change-alert'),
-                        html.Br(),
-
-                        dbc.Input(id='change-email',autoFocus=True),
-                        dbc.FormText('Email'),
-                        html.Br(),
-                        
-                        dbc.Input(id='change-key',type='password'),
-                        dbc.FormText('Code'),
-                        html.Br(),
-
-                        dbc.Input(id='change-password',type='password'),
-                        dbc.FormText('New password'),
-                        html.Br(),
-
-                        dbc.Input(id='change-confirm',type='password'),
-                        dbc.FormText('Confirm new password'),
-                        html.Br(),
-
-                        dbc.Button('Submit password change',id='change-button',color='primary'),
-
-                    ]
-                )
-            ],
-            width=6
-        )
+def layout(token=None, **_kwargs):
+    if current_user.is_authenticated:
+        return dcc.Location(id="reset-authenticated", href="/profile", refresh=True)
+    form = dbc.Form(
+        [
+            dcc.Store(id="reset-token", data=token or ""),
+            dcc.Location(id="reset-redirect", refresh=True),
+            html.Div(id="reset-alert"),
+            form_field(
+                "New password",
+                "reset-password",
+                input_type="password",
+                placeholder="At least 12 characters",
+                help_text="Use 12 or more characters.",
+                auto_focus=True,
+            ),
+            form_field(
+                "Confirm new password",
+                "reset-confirm",
+                input_type="password",
+                placeholder="Repeat your password",
+            ),
+            dbc.Button(
+                "Update password",
+                id="reset-submit",
+                color="primary",
+                className="auth-submit",
+            ),
+        ]
+    )
+    footer = html.P(
+        [
+            dcc.Link("Request a new link", href="/forgot-password"),
+            " · ",
+            dcc.Link("Back to sign in", href="/login"),
+        ],
+        className="auth-footer",
+    )
+    return auth_card(
+        "Choose a new password",
+        "This secure link can be used once and expires after 30 minutes.",
+        form,
+        footer,
     )
 
 
-# function to validate inputs
-@app.callback(
-    [Output('change-password','valid'),
-     Output('change-password','invalid'),
-     Output('change-confirm','valid'),
-     Output('change-confirm','invalid'),
-     Output('change-button','disabled')],
-    [Input('change-password','value'),
-     Input('change-confirm','value')]
+@callback(
+    Output("reset-alert", "children"),
+    Output("reset-redirect", "href"),
+    Input("reset-submit", "n_clicks"),
+    State("reset-token", "data"),
+    State("reset-password", "value"),
+    State("reset-confirm", "value"),
+    prevent_initial_call=True,
 )
-def change_validate_inputs(password,confirm):
-    password_valid = False
-    password_invalid = False
-    confirm_valid = False
-    confirm_invalid = True
-    disabled = True
-    
-    bad = [None,'']
-
-    if password in bad:
-        pass
-    elif isinstance(password,str):
-        password_valid = True
-        password_invalid = False
-    
-    if confirm in bad:
-        pass
-    elif confirm==password:
-        confirm_valid = True
-        confirm_invalid = False
-    
-    if password_valid and confirm_valid:
-        disabled = False
-
-    return (
-        password_valid,
-        password_invalid,
-        confirm_valid,
-        confirm_invalid,
-        disabled
-    )
-
-
-@app.callback(
-    [Output('change-alert','children'),
-     Output('change-url','pathname')],
-    [Input('change-button','n_clicks')],
-    [State('change-email','value'),
-     State('change-key','value'),
-     State('change-password','value'),
-     State('change-confirm','value')]
-)
-def submit_change(submit,email,key,password,confirm):
-    # all inputs have been previously validated
-    # validate_password_key(email,key,engine)
-    if validate_password_key(email,key,engine):
-        print('validate password success')
-        # if that returns true, update the user information
-        if change_password(email,password,engine):
-            return success_alert,'/login' 
-        else:
-            print('validate password failed - at after change user')
-            pass
-    else:
-        print('validate password failed')
-        pass
-    return failure_alert, no_update
+def reset_password(n_clicks, token, password, confirm):
+    if not n_clicks:
+        return no_update, no_update
+    if password != confirm:
+        return feedback_alert("Passwords do not match."), no_update
+    try:
+        redeem_reset_token(token, password)
+    except AuthError as exc:
+        return feedback_alert(str(exc)), no_update
+    except SQLAlchemyError:
+        LOGGER.exception("Password reset failed")
+        return feedback_alert("Unable to update your password right now."), no_update
+    return feedback_alert("Password updated. Redirecting to sign in…", "success"), "/login"

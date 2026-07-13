@@ -1,6 +1,16 @@
-__pycache__
+__pycache__/
+*.py[cod]
+*.db
+instance/
+.env
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
 
 .idea/
 .cache/
 .DS_Store
-.vscode
+.vscode/

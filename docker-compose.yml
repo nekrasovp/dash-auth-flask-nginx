@@ -1,22 +1,56 @@
-version: '3'
+name: dash-starter
 
 services:
-  dash-auth-flask:
-    container_name: dash-auth-flask
-    restart: always
-    build: ./dash-auth-flask
-    image: dash-flask-image
-    ports:
-      - "8000:8000"
-    command: >
-      sh -c "python create_tables.py &&
-             /usr/local/bin/gunicorn -w 1 -b :8000 app:server"
+  app:
+    build:
+      context: ./dash-auth-flask
+    image: dash-starter-app
+    restart: unless-stopped
+    environment:
+      APP_ENV: ${APP_ENV:-development}
+      SECRET_KEY: ${SECRET_KEY:-}
+      DATABASE_URL: ${DATABASE_URL:-sqlite:////data/users.db}
+      MAIL_BACKEND: ${MAIL_BACKEND:-console}
+      MAILJET_API_KEY: ${MAILJET_API_KEY:-}
+      MAILJET_API_SECRET: ${MAILJET_API_SECRET:-}
+      MAIL_FROM: ${MAIL_FROM:-no-reply@example.com}
+      RESET_TOKEN_TTL_MINUTES: ${RESET_TOKEN_TTL_MINUTES:-30}
+      SEED_DEMO_USER: ${SEED_DEMO_USER:-false}
+      DEMO_USER_EMAIL: ${DEMO_USER_EMAIL:-demo@example.com}
+      DEMO_USER_PASSWORD: ${DEMO_USER_PASSWORD:-dash-demo-password}
+      DEMO_USER_FIRST_NAME: ${DEMO_USER_FIRST_NAME:-Demo}
+      DEMO_USER_LAST_NAME: ${DEMO_USER_LAST_NAME:-User}
+    expose:
+      - "8000"
+    volumes:
+      - app-data:/data
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=2)"
+      interval: 10s
+      timeout: 3s
+      start_period: 15s
+      retries: 5
 
   nginx:
-    container_name: nginx
-    restart: always
-    build: ./nginx
-    ports:
-      - "80:80"
+    build:
+      context: ./nginx
+    image: dash-starter-nginx
+    restart: unless-stopped
     depends_on:
-      - dash-auth-flask
+      app:
+        condition: service_healthy
+    ports:
+      - "8000:80"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/healthz"]
+      interval: 10s
+      timeout: 3s
+      start_period: 5s
+      retries: 5
+
+volumes:
+  app-data:

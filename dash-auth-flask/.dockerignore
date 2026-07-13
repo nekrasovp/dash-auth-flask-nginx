@@ -17,3 +17,10 @@ coverage.xml
 *,cover
 *.log
 .git
+.env
+.venv
+instance
+*.db
+tests
+.pytest_cache
+.ruff_cache

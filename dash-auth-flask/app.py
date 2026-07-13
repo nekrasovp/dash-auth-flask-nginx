@@ -1,138 +1,207 @@
-# index page
-from dash import dcc
-from dash import html
+"""Dash application shell and global callbacks."""
+
+from __future__ import annotations
+
+import dash
 import dash_bootstrap_components as dbc
-from dash.dependencies import Input, Output, State
+from dash import ALL, Input, Output, State, clientside_callback, dcc, html, no_update
+from flask_login import current_user, logout_user
 
-from flask import redirect
 from server import app, server
-from flask_login import logout_user, current_user
-
-# app pages
-from pages import (home, profile, page1)
-
-# app authentication 
-from pages.auth_pages import (login, register, forgot_password, change_password)
+from ui import PUBLIC_PATHS
 
 
-# the style arguments for the sidebar. We use position:fixed and a fixed width
-SIDEBAR_STYLE = {
-    "position": "fixed",
-    "top": 0,
-    "left": 0,
-    "bottom": 0,
-    "width": "16rem",
-    "padding": "2rem 1rem",
-    "background-color": "#333",
-}
+def brand():
+    return html.Div(
+        [
+            html.Div("D", className="brand-mark"),
+            html.Div(
+                [
+                    html.Span("Dash Starter", className="brand-name"),
+                    html.Span("Analytics workspace", className="brand-subtitle"),
+                ],
+            ),
+        ],
+        className="app-brand",
+    )
 
-# the styles for the main content position it to the right of the sidebar and
-# add some padding.
-CONTENT_STYLE = {
-    "margin-left": "18rem",
-    "margin-right": "2rem",
-    "padding": "2rem 1rem",
-}
 
-sidebar = html.Div(
-    [
-        html.H2("Menu", className="display-4"),
-        html.Hr(),
-        html.P(
-            "Subtitle", className="lead"
-        ),
-        dbc.Nav(
-            [
-                    dbc.NavItem(dbc.NavLink("Home", href="/home")),
-                    dbc.NavItem(dbc.NavLink("Page1", href="/page1")),
-                    dbc.NavItem(dbc.NavLink("Profile", id='user-name', href='/profile')),
-                    dbc.NavItem(dbc.NavLink('Login',id='user-action',href='/login'))
-            ],
-            vertical=True,
-            pills=True,
-        ),
-    ],
-    style=SIDEBAR_STYLE,
+def nav_links():
+    return dbc.Nav(
+        [
+            dbc.NavLink(
+                [html.Span("⌂", className="nav-icon"), "Overview"],
+                href="/",
+                active="exact",
+            ),
+            dbc.NavLink(
+                [html.Span("↗", className="nav-icon"), "Analytics"],
+                href="/analytics",
+                active="exact",
+            ),
+            dbc.NavLink(
+                [html.Span("○", className="nav-icon"), "Profile"],
+                href="/profile",
+                active="exact",
+            ),
+        ],
+        vertical=True,
+        pills=True,
+        className="app-nav",
+    )
+
+
+def account_block(place: str):
+    if not current_user.is_authenticated:
+        return html.Div()
+    initials = f"{current_user.first_name[:1]}{current_user.last_name[:1]}".upper()
+    return html.Div(
+        [
+            html.Div(initials, className="user-avatar"),
+            html.Div(
+                [
+                    html.Strong(
+                        f"{current_user.first_name} {current_user.last_name}",
+                        className="user-name",
+                    ),
+                    html.Span(current_user.email, className="user-email"),
+                ],
+                className="user-meta",
+            ),
+            dbc.Button(
+                "Sign out",
+                id={"type": "logout-button", "place": place},
+                color="link",
+                className="logout-button",
+                n_clicks=0,
+            ),
+        ],
+        className="account-block",
+    )
+
+
+def desktop_sidebar():
+    return html.Aside(
+        [
+            brand(),
+            html.Div("Workspace", className="nav-section-label"),
+            nav_links(),
+            account_block("desktop"),
+        ],
+        className="app-sidebar",
+    )
+
+
+def mobile_header():
+    return html.Header(
+        [
+            html.Button(
+                "☰",
+                id="mobile-menu-open",
+                className="menu-button",
+                title="Open navigation",
+                **{"aria-label": "Open navigation"},
+            ),
+            brand(),
+        ],
+        className="mobile-header",
+    )
+
+
+def serve_layout():
+    return html.Div(
+        [
+            dcc.Location(id="app-url", refresh=True),
+            dcc.Store(id="theme-store", storage_type="local"),
+            html.Div(
+                [
+                    mobile_header(),
+                    desktop_sidebar(),
+                    dbc.Offcanvas(
+                        [brand(), nav_links(), account_block("mobile")],
+                        id="mobile-menu",
+                        title=None,
+                        is_open=False,
+                        placement="start",
+                        className="mobile-menu",
+                    ),
+                    html.Main(dash.page_container, className="app-main"),
+                ],
+                id="app-shell",
+                className="app-shell",
+            ),
+            html.Button(
+                "◐",
+                id="theme-toggle",
+                className="theme-toggle",
+                title="Toggle color theme",
+                **{"aria-label": "Toggle color theme"},
+            ),
+        ],
+        id="app-root",
+        **{"data-theme": "light"},
+    )
+
+
+app.layout = serve_layout
+
+
+@app.callback(
+    Output("app-shell", "className"),
+    Input("app-url", "pathname"),
+)
+def update_shell(pathname: str | None):
+    is_public = pathname in PUBLIC_PATHS or not current_user.is_authenticated
+    return "app-shell auth-shell" if is_public else "app-shell"
+
+
+@app.callback(
+    Output("mobile-menu", "is_open"),
+    Input("mobile-menu-open", "n_clicks"),
+    Input("app-url", "pathname"),
+    State("mobile-menu", "is_open"),
+    prevent_initial_call=True,
+)
+def toggle_mobile_menu(n_clicks, _pathname, is_open):
+    triggered = dash.ctx.triggered_id
+    if triggered == "mobile-menu-open" and n_clicks:
+        return not is_open
+    return False
+
+
+@app.callback(
+    Output("app-url", "href"),
+    Input({"type": "logout-button", "place": ALL}, "n_clicks"),
+    prevent_initial_call=True,
+)
+def logout(n_clicks):
+    if not any(n_clicks or []):
+        return no_update
+    logout_user()
+    return "/login"
+
+
+clientside_callback(
+    """
+    function(nClicks, storedTheme) {
+        let theme = storedTheme || 'light';
+        if (nClicks) {
+            theme = theme === 'dark' ? 'light' : 'dark';
+        }
+        return [theme, theme, theme === 'dark' ? '☀' : '◐'];
+    }
+    """,
+    Output("theme-store", "data"),
+    Output("app-root", "data-theme"),
+    Output("theme-toggle", "children"),
+    Input("theme-toggle", "n_clicks"),
+    State("theme-store", "data"),
 )
 
-content = html.Div(id="page-content", style=CONTENT_STYLE)
 
-app.layout = html.Div([dcc.Location(id="base-url"), sidebar, content])
+if __name__ == "__main__":
+    with server.app_context():
+        from extensions import db
 
-@app.callback(
-    Output('page-content', 'children'),
-    [Input('base-url', 'pathname')])
-def router(pathname):
-    '''
-    routes to correct page based on pathname
-    '''
-    print('routing to',pathname)
-    # auth pages
-    if pathname == '/login':
-        if not current_user.is_authenticated:
-            return login.layout()
-    elif pathname =='/register':
-        if not current_user.is_authenticated:
-            return register.layout()
-    elif pathname == '/change':
-        if current_user.is_authenticated:
-            return change_password.layout()
-    elif pathname == '/forgot':
-        if current_user.is_authenticated:
-            return forgot_password.layout()
-    elif pathname == '/logout':
-        if current_user.is_authenticated:
-            logout_user()
-    
-    # app pages
-    elif pathname == '/' or pathname=='/home' or pathname=='/home':
-        if current_user.is_authenticated:
-            return home.layout()
-    elif pathname == '/profile' or pathname=='/profile':
-        if current_user.is_authenticated:
-            return profile.layout()
-    elif pathname == '/page1' or pathname=='/page1':
-        if current_user.is_authenticated:
-            return page1.layout()
-
-    # DEFAULT LOGGED IN: /home
-    if current_user.is_authenticated:
-        return home.layout()
-    
-    # DEFAULT NOT LOGGED IN: /login
-    return login.layout()
-
-
-
-
-
-@app.callback(
-    Output('user-name', 'children'),
-    [Input('page-content', 'children')])
-def profile_link(content):
-    '''
-    returns a navbar link to the user profile if the user is authenticated
-    '''
-    if current_user.is_authenticated:
-        return html.Div(current_user.first)
-    else:
-        return ''
-
-
-@app.callback(
-    [Output('user-action', 'children'),
-     Output('user-action','href')],
-    [Input('page-content', 'children')])
-def user_logout(input1):
-    '''
-    returns a navbar link to /logout or /login, respectively, if the user is authenticated or not
-    '''
-    if current_user.is_authenticated:
-        return 'Logout', '/logout'
-    else:
-        return 'Login', '/login'
-
-
-
-if __name__ == '__main__':
-    app.run_server(debug=False, port=8000)
+        db.create_all()
+    app.run(host="0.0.0.0", port=8000, debug=True)

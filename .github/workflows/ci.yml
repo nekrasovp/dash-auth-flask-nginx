@@ -39,11 +39,11 @@ jobs:
       - name: Install dependencies
         run: python -m pip install -r requirements-dev.txt
       - name: Lint
-        run: ruff check .
+        run: python -m ruff check .
       - name: Check formatting
-        run: ruff format --check .
+        run: python -m ruff format --check .
       - name: Run unit and integration tests
-        run: pytest -m "not browser" --cov=. --cov-report=term-missing
+        run: python -m pytest -m "not browser" --cov=. --cov-report=term-missing
 
   browser:
     name: Browser smoke test
@@ -69,7 +69,7 @@ jobs:
       - name: Install dependencies
         run: python -m pip install -r requirements-dev.txt
       - name: Run browser test
-        run: pytest -m browser
+        run: python -m pytest -m browser
 
   containers:
     name: Container checks

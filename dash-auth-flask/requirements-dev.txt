@@ -1,5 +1,5 @@
 -r requirements.txt
 pytest==9.1.1
 pytest-cov==7.1.0
-ruff==0.16.8
-selenium==4.49.0
+ruff==0.17.1
+selenium==4.51.0

@@ -98,8 +98,9 @@ def test_registration_dashboard_theme_and_mobile_navigation(live_server, browser
     wait.until(expected.visibility_of_element_located((By.CSS_SELECTOR, ".mobile-header")))
     browser.find_element(By.ID, "mobile-menu-open").click()
     wait.until(
-        lambda driver: "show"
-        in driver.find_element(By.ID, "mobile-menu").get_attribute("class").split()
+        lambda driver: (
+            "show" in driver.find_element(By.ID, "mobile-menu").get_attribute("class").split()
+        )
     )
 
     severe_logs = [entry for entry in browser.get_log("browser") if entry["level"] == "SEVERE"]

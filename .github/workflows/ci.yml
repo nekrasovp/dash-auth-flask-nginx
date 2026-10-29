@@ -95,3 +95,32 @@ jobs:
           outputs: type=cacheonly
       - name: Build Nginx image
         run: docker compose build nginx
+      - name: Smoke-test application through Nginx
+        env:
+          APP_ENV: test
+          SECRET_KEY: ci-container-test
+          MAIL_BACKEND: console
+        run: |
+          docker compose up --detach --build --wait --wait-timeout 90
+          docker compose exec -T nginx nginx -t
+          python3 - <<'PY'
+          import json
+          import urllib.request
+
+          with urllib.request.urlopen("http://127.0.0.1:8000/healthz", timeout=5) as response:
+              assert response.status == 200
+              assert json.load(response) == {"status": "ok"}
+              for name, value in {
+                  "X-Content-Type-Options": "nosniff",
+                  "Referrer-Policy": "strict-origin-when-cross-origin",
+                  "X-Frame-Options": "SAMEORIGIN",
+              }.items():
+                  assert response.headers[name] == value, name
+          print("Nginx health check and security headers passed.")
+          PY
+      - name: Show container logs on failure
+        if: failure()
+        run: docker compose logs --no-color app nginx
+      - name: Stop smoke-test stack
+        if: always()
+        run: docker compose down --volumes

@@ -1,5 +1,6 @@
 [tool.pytest.ini_options]
-addopts = "-ra -W error"
+# Tests use Selenium directly; Dash's pytest plugin uses hooks deprecated in pytest 9.2.
+addopts = "-ra -W error -p no:dash"
 testpaths = ["tests"]
 markers = [
     "browser: end-to-end tests requiring Chrome",

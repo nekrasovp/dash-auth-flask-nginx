@@ -1,4 +1,4 @@
-dash==4.4.1
+dash==4.5.0
 dash-bootstrap-components==2.0.4
 email-validator==2.3.0
 Flask==3.1.3
